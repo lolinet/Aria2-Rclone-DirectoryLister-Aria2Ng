@@ -33,9 +33,9 @@ do_start(){
 	if [[ $? -eq 0 ]]; then
 		echo -e "${Info} $NAME_BIN (PID ${PID}) 正在运行..." && exit 0
 	else
-		fusermount -zuq $LOCAL >/dev/null 2>&1
-		mkdir -p $LOCAL
-		sudo /usr/bin/rclone mount $NAME:$REMOTE $LOCAL --copy-links --no-gzip-encoding --no-check-certificate --allow-other --allow-non-empty --umask 000 >/dev/null 2>&1 &
+		fusermount -zuq $LOCALFile >/dev/null 2>&1
+		mkdir -p $LOCALFile
+		sudo /usr/bin/rclone mount $NAME:$REMOTE $LOCALFile --copy-links --no-gzip-encoding --no-check-certificate --allow-other --allow-non-empty --umask 000 >/dev/null 2>&1 &
 		sleep 2s
 		check_running
 		if [[ $? -eq 0 ]]; then
@@ -59,7 +59,7 @@ do_stop(){
 		echo -e "${Info} $NAME_BIN 未运行"
 		RETVAL=1
 	fi
-	fusermount -zuq $LOCAL >/dev/null 2>&1
+	fusermount -zuq $LOCALFile >/dev/null 2>&1
 }
 do_status(){
 	check_running
