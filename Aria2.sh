@@ -31,8 +31,6 @@ check_system(){
 	KernelBit="$(getconf LONG_BIT)"
     if [[ "${ID}" == "debian" && ${VERSION_ID} -ge 8 ]];then
         echo -e "${OK} ${GreenBG} 当前系统为 Debian ${VERSION_ID} ${Font} "
-    elif [[ "${ID}" == "ubuntu" && `echo "${VERSION_ID}" | cut -d '.' -f1` -ge 16 ]];then
-        echo -e "${OK} ${GreenBG} 当前系统为 Ubuntu ${VERSION_ID} ${Font} "
     else
         echo -e "${Error} ${RedBG} 当前系统为不在支持的系统列表内，安装中断 ${Font} "
         exit 1
@@ -47,6 +45,8 @@ is_root(){
         echo -e "${Error} ${RedBG} 当前用户不是root用户，请切换到root用户后重新执行脚本 ${Font}" 
         exit 1
     fi
+    stty erase '^H' && read -p "请输入你的DirectoryLister域名信息(eg:pan.94ish.me):" domain && read -p "请输入你的Aria2NG域名信息(eg:dl.94ish.me):" domain2
+    stty erase '^H' && read -p "请输入你的Aria2密钥:" pass
 }
 debian_source(){
     # 添加源
@@ -228,7 +228,6 @@ aria2ng_install(){
     fi
 }
 domain_check(){
-    stty erase '^H' && read -p "请输入你的DirectoryLister域名信息(eg:pan.94ish.me):" domain && read -p "请输入你的Aria2NG域名信息(eg:dl.94ish.me):" domain2
     ## ifconfig
     ## stty erase '^H' && read -p "请输入公网 IP 所在网卡名称(default:eth0):" broadcast
     ## [[ -z ${broadcast} ]] && broadcast="eth0"
@@ -296,7 +295,6 @@ wget "https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Ari
 echo '' > /root/.aria2/aria2.session
 chmod +x /root/.aria2/trackers-list-aria2.sh
 chmod 777 /root/.aria2/aria2.session
-stty erase '^H' && read -p "请输入你的Aria2密钥:" pass
 echo "dir=/root/Download
 rpc-secret=${pass}
 
