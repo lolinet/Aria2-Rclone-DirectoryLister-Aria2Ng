@@ -22,7 +22,7 @@ Error="${Red}[Error]${Font}"
 nginx_conf_dir="/etc/nginx/conf.d"
 aria2ng_new_ver="0.3.0"
 aria2ng_download_http="https://github.com/mayswind/AriaNg/releases/download/${aria2ng_new_ver}/aria-ng-${aria2ng_new_ver}.zip"
-aria2_new_ver=$(wget -qO- "https://github.com/q3aql/aria2-static-builds/tags"| grep "/q3aql/aria2-static-builds/releases/tag/"| head -n 1| awk -F "/tag/v" '{print $2}'| sed 's/\">//') && echo -e "${aria2_new_ver}"
+aria2_new_ver="1.33.1"
 
 
 source /etc/os-release &>/dev/null
