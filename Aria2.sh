@@ -43,10 +43,10 @@ check_system(){
 	port_exist_check 443
 	port_exist_check 33001
 	port_exist_check 6800
-apt-get update
-apt install wget unzip net-tools bc curl sudo -y
-	
+	apt-get update
+	apt install wget unzip net-tools bc curl sudo -y
 }
+
 # 判定是否为root用户
 is_root(){
     if [ `id -u` == 0 ]
@@ -60,43 +60,11 @@ is_root(){
 
 basic_dependency(){
 	curl -sL https://deb.nodesource.com/setup_8.x | bash -
-   apt install nodejs -y
+	apt install nodejs -y
 }
 
 caddy_install(){
-	if [[ -e ${caddy_file} ]]; then
-		echo && echo -e "${Red}[信息]${Font} 检测到 Caddy 已安装，是否继续安装(覆盖更新)？[y/N]"
-		stty erase '^H' && read -p "(默认: n):" yn
-		[[ -z ${yn} ]] && yn="n"
-		if [[ ${yn} == [Nn] ]]; then
-			echo && echo "已取消..." && exit 1
-		fi
-	fi
-	[[ ! -e ${caddyfile} ]] && mkdir "${caddyfile}"
-	cd "${caddyfile}"
-	PID=$(ps -ef |grep "caddy" |grep -v "grep" |grep -v "init.d" |grep -v "service" |grep -v "caddy_install" |awk '{print $2}')
-	[[ ! -z ${PID} ]] && kill -9 ${PID}
-	[[ -e "caddy_linux*.tar.gz" ]] && rm -rf "caddy_linux*.tar.gz"
-	
-	if [[ ${bit} == "i386" ]]; then
-		wget --no-check-certificate -O "caddy_linux.tar.gz" "https://caddyserver.com/download/linux/386?license=personal" && caddy_bit="caddy_linux_386"
-	elif [[ ${bit} == "i686" ]]; then
-		wget --no-check-certificate -O "caddy_linux.tar.gz" "https://caddyserver.com/download/linux/386?license=personal" && caddy_bit="caddy_linux_386"
-	elif [[ ${bit} == "x86_64" ]]; then
-		wget --no-check-certificate -O "caddy_linux.tar.gz" "https://caddyserver.com/download/linux/amd64?license=personal" && caddy_bit="caddy_linux_amd64"
-	else
-		echo -e "${Red}[错误]${Font} 不支持 ${bit} !" && exit 1
-	fi
-	[[ ! -e "caddy_linux.tar.gz" ]] && echo -e "${Red}[错误]${Font} Caddy 下载失败 !" && exit 1
-	tar zxf "caddy_linux.tar.gz"
-	rm -rf "caddy_linux.tar.gz"
-	[[ ! -e ${caddy_file} ]] && echo -e "${Red}[错误]${Font} Caddy 解压失败或压缩文件错误 !" && exit 1
-	rm -rf LICENSES.txt
-	rm -rf README.txt 
-	rm -rf CHANGES.txt
-	rm -rf "init/"
-	chmod +x caddy
-	cd /root
+	wget -N --no-check-certificate https://raw.githubusercontent.com/ToyoDAdoubi/doubi/master/caddy_install.sh && chmod +x caddy_install.sh && bash caddy_install.sh install http.filemanager
 }
 
 port_exist_check(){
@@ -121,10 +89,10 @@ gdlist_install(){
 	pm2 start bin/www
 	pm2 save
 	pm2 startup
-	echo "http://${domain2} {
- redir https://${domain2}{url}
+	echo "http://${domain} {
+ redir https://${domain}{url}
 }
-https://${domain2} {
+https://${domain} {
  gzip
  tls ${sslmail}
  proxy / http://127.0.0.1:33001
