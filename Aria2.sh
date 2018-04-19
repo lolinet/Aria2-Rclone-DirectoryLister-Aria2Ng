@@ -42,7 +42,10 @@ check_system(){
 	port_exist_check 80
 	port_exist_check 443
 	port_exist_check 33001
-	port_exist_check 6688
+	port_exist_check 6800
+apt-get update
+apt install wget unzip net-tools bc curl sudo -y
+	
 }
 # 判定是否为root用户
 is_root(){
@@ -57,7 +60,7 @@ is_root(){
 
 basic_dependency(){
 	curl -sL https://deb.nodesource.com/setup_8.x | bash -
-    apt install wget unzip net-tools bc curl sudo nodejs -y
+   apt install nodejs -y
 }
 
 caddy_install(){
