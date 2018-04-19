@@ -123,11 +123,7 @@ gdlist_install(){
 	pm2 save
 	pm2 startup
 	echo "http://${domain} {
- redir https://${domain}{url}
-}
-https://${domain} {
  gzip
- tls ${sslmail}
  proxy / http://127.0.0.1:33001
 }" > /usr/local/caddy/Caddyfile
 }
@@ -153,7 +149,6 @@ domain_check(){
 	stty erase '^H' && read -p "请输入你的GDlist域名信息(eg:pan.94ish.me):" domain 
 	read -p "请输入你的Aria2NG域名信息(eg:dl.94ish.me):" domain2
     stty erase '^H' && read -p "请输入你的Aria2密钥:" pass
-	stty erase '^H' && read -p "请输入你的电子邮箱:" sslmail
     ## ifconfig
     ## stty erase '^H' && read -p "请输入公网 IP 所在网卡名称(default:eth0):" broadcast
     ## [[ -z ${broadcast} ]] && broadcast="eth0"
