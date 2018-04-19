@@ -93,6 +93,8 @@ caddy_install(){
 	rm -rf CHANGES.txt
 	rm -rf "init/"
 	chmod +x caddy
+	nowDIR="$( cd "$( dirname "$0"  )" && pwd  )"
+	cd ${nowDIR}
 }
 
 port_exist_check(){
