@@ -19,22 +19,30 @@ OK="${Green}[OK]${Font}"
 Error="${Red}[Error]${Font}"
 
 #folder
-nginx_conf_dir="/etc/nginx/conf.d"
+caddyfile="/usr/local/caddy/"
+caddy_file="/usr/local/caddy/caddy"
+caddy_conf_file="/usr/local/caddy/Caddyfile"
 aria2ng_new_ver="0.3.0"
 aria2ng_download_http="https://github.com/mayswind/AriaNg/releases/download/${aria2ng_new_ver}/aria-ng-${aria2ng_new_ver}.zip"
 aria2_new_ver="1.33.1"
 
-
+bit=`uname -m`
 source /etc/os-release &>/dev/null
 # 系统检测、仅支持 Debian8+ 和 Ubuntu16.04+
 check_system(){
 	KernelBit="$(getconf LONG_BIT)"
     if [[ "${ID}" == "debian" && ${VERSION_ID} -ge 8 ]];then
         echo -e "${OK} ${GreenBG} 当前系统为 Debian ${VERSION_ID} ${Font} "
+    elif [[ "${ID}" == "ubuntu" && `echo "${VERSION_ID}" | cut -d '.' -f1` -ge 16 ]];then
+        echo -e "${OK} ${GreenBG} 当前系统为 Ubuntu ${VERSION_ID} ${Font} "
     else
         echo -e "${Error} ${RedBG} 当前系统为不在支持的系统列表内，安装中断 ${Font} "
         exit 1
     fi
+	port_exist_check 80
+	port_exist_check 443
+	port_exist_check 33001
+	port_exist_check 6688
 }
 # 判定是否为root用户
 is_root(){
@@ -45,155 +53,48 @@ is_root(){
         echo -e "${Error} ${RedBG} 当前用户不是root用户，请切换到root用户后重新执行脚本 ${Font}" 
         exit 1
     fi
-    stty erase '^H' && read -p "请输入你的DirectoryLister域名信息(eg:pan.94ish.me):" domain && read -p "请输入你的Aria2NG域名信息(eg:dl.94ish.me):" domain2
-    stty erase '^H' && read -p "请输入你的Aria2密钥:" pass
 }
-debian_source(){
-    # 添加源
-    echo "deb http://packages.dotdeb.org jessie all" | tee --append /etc/apt/sources.list
-    echo "deb-src http://packages.dotdeb.org jessie all" | tee --append /etc/apt/sources.list
-    # 添加key
-    wget --no-check-certificate https://www.dotdeb.org/dotdeb.gpg
-    if [[ -f dotdeb.gpg ]];then
-        apt-key add dotdeb.gpg
-        if [[ $? -eq 0 ]];then
-            echo -e "${OK} ${GreenBG} 导入 GPG 秘钥成功 ${Font}"
-            sleep 1
-        else
-            echo -e "${Error} ${RedBG} 导入 GPG 秘钥失败 ${Font}"
-            exit 1
-        fi
-    else
-        echo -e "${Error} ${RedBG} 下载 GPG 秘钥失败 ${Font}"
-        exit 1
-    fi
-    # 源更新
-    apt-get update 
-}
+
 basic_dependency(){
-    apt update
-    apt install wget unzip net-tools bc curl sudo -y     
+	curl -sL https://deb.nodesource.com/setup_8.x | bash -
+    apt install wget unzip net-tools bc curl sudo nodejs -y
 }
-nginx_install(){
-        debian_source
-        apt install nginx -y
-        if [[ $? -eq 0 ]];then
-            echo -e "${OK} ${GreenBG} nginx 安装成功 ${Font}"
-            sleep 1
-        else
-            echo -e "${Error} ${RedBG} nginx 安装失败 ${Font}"
-            exit 1
-        fi   
-}
-php7_install(){
-        apt install php7.0-cgi php7.0-fpm php7.0-curl php7.0-gd -y
-        if [[ $? -eq 0 ]];then
-            echo -e "${OK} ${GreenBG} php7 安装成功 ${Font}"
-            sleep 1
-        else
-            echo -e "${Error} ${RedBG} php7 安装失败 ${Font}"
-            exit 1
-        fi  
-}
-nginx_conf_ssl_add(){
-        cat > ${nginx_conf_dir}/aria2ng.conf <<EOF
-server {
-    listen 80;
 
-    server_name ${domain2};
-    root /home/wwwroot/${domain2};
-    index index.html index.php;        
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/run/php/php7.0-fpm.sock;
-    }
+caddy_install(){
+	if [[ -e ${caddy_file} ]]; then
+		echo && echo -e "${Red}[信息]${Font} 检测到 Caddy 已安装，是否继续安装(覆盖更新)？[y/N]"
+		stty erase '^H' && read -p "(默认: n):" yn
+		[[ -z ${yn} ]] && yn="n"
+		if [[ ${yn} == [Nn] ]]; then
+			echo && echo "已取消..." && exit 1
+		fi
+	fi
+	[[ ! -e ${caddyfile} ]] && mkdir "${caddyfile}"
+	cd "${caddyfile}"
+	PID=$(ps -ef |grep "caddy" |grep -v "grep" |grep -v "init.d" |grep -v "service" |grep -v "caddy_install" |awk '{print $2}')
+	[[ ! -z ${PID} ]] && kill -9 ${PID}
+	[[ -e "caddy_linux*.tar.gz" ]] && rm -rf "caddy_linux*.tar.gz"
+	
+	if [[ ${bit} == "i386" ]]; then
+		wget --no-check-certificate -O "caddy_linux.tar.gz" "https://caddyserver.com/download/linux/386?license=personal" && caddy_bit="caddy_linux_386"
+	elif [[ ${bit} == "i686" ]]; then
+		wget --no-check-certificate -O "caddy_linux.tar.gz" "https://caddyserver.com/download/linux/386?license=personal" && caddy_bit="caddy_linux_386"
+	elif [[ ${bit} == "x86_64" ]]; then
+		wget --no-check-certificate -O "caddy_linux.tar.gz" "https://caddyserver.com/download/linux/amd64?license=personal" && caddy_bit="caddy_linux_amd64"
+	else
+		echo -e "${Red}[错误]${Font} 不支持 ${bit} !" && exit 1
+	fi
+	[[ ! -e "caddy_linux.tar.gz" ]] && echo -e "${Red}[错误]${Font} Caddy 下载失败 !" && exit 1
+	tar zxf "caddy_linux.tar.gz"
+	rm -rf "caddy_linux.tar.gz"
+	[[ ! -e ${caddy_file} ]] && echo -e "${Red}[错误]${Font} Caddy 解压失败或压缩文件错误 !" && exit 1
+	rm -rf LICENSES.txt
+	rm -rf README.txt 
+	rm -rf CHANGES.txt
+	rm -rf "init/"
+	chmod +x caddy
 }
-EOF
-	cat > ${nginx_conf_dir}/DirectoryLister.conf <<EOF
-server
-    {
-        listen 443 ssl http2;
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-        server_name ${domain};
-        root /home/wwwroot/${domain};
-        index index.html index.php;
-        ssl on;
-        ssl_certificate /home/wwwroot/ssl/DirectoryLister.crt;
-        ssl_certificate_key /home/wwwroot/ssl/DirectoryLister.key;
-        ssl_session_timeout 5m;
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-        ssl_prefer_server_ciphers on;
-        ssl_ciphers "EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5";
-        ssl_session_cache builtin:1000 shared:SSL:10m;
-        location ~ \.php$ {
-            include snippets/fastcgi-php.conf;
-            fastcgi_pass unix:/run/php/php7.0-fpm.sock;
-        }
-        location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
-        {
-            expires      30d;
-        }
 
-        location ~ .*\.(js|css)?$
-        {
-            expires      12h;
-        }
-        access_log off;
-    }
-server
-    {
-        listen 80;
-        server_name ${domain};
-        rewrite ^(.*) https://${domain}\$1 permanent;
-    }
-EOF
-    if [[ $? -eq 0 ]];then
-        echo -e "${OK} ${GreenBG} nginx 配置导入成功 ${Font}"
-        sleep 1
-    else
-        echo -e "${Error} ${RedBG} nginx 配置导入失败 ${Font}"
-        exit 1
-    fi
-}
-ssl_install(){
-    apt install socat netcat -y
-    if [[ $? -eq 0 ]];then
-        echo -e "${OK} ${GreenBG} SSL 证书生成脚本依赖安装成功 ${Font}"
-        sleep 2
-    else
-        echo -e "${Error} ${RedBG} SSL 证书生成脚本依赖安装失败 ${Font}"
-        exit 6
-    fi
-
-    curl  https://get.acme.sh | sh
-
-    if [[ $? -eq 0 ]];then
-        echo -e "${OK} ${GreenBG} SSL 证书生成脚本安装成功 ${Font}"
-        sleep 2
-    else
-        echo -e "${Error} ${RedBG} SSL 证书生成脚本安装失败，请检查相关依赖是否正常安装 ${Font}"
-        exit 7
-    fi
-
-}
-acme(){
-    mkdir -p /home/wwwroot/ssl
-    ~/.acme.sh/acme.sh --issue -d ${domain} --standalone -k ec-256 --force
-    if [[ $? -eq 0 ]];then
-        echo -e "${OK} ${GreenBG} SSL 证书生成成功 ${Font}"
-        sleep 2
-        ~/.acme.sh/acme.sh --installcert -d ${domain} --fullchainpath /home/wwwroot/ssl/DirectoryLister.crt --keypath /home/wwwroot/ssl/DirectoryLister.key --ecc
-        if [[ $? -eq 0 ]];then
-        echo -e "${OK} ${GreenBG} 证书配置成功 ${Font}"
-        sleep 2
-        else
-        echo -e "${Error} ${RedBG} 证书配置失败 ${Font}"
-        fi
-    else
-        echo -e "${Error} ${RedBG} SSL 证书生成失败 ${Font}"
-        exit 1
-    fi
-}
 port_exist_check(){
     if [[ 0 -eq `netstat -tlpn | grep "$1"| wc -l` ]];then
         echo -e "${OK} ${GreenBG} $1 端口未被占用 ${Font}"
@@ -204,19 +105,27 @@ port_exist_check(){
         exit 1
     fi
 }
-DirectoryLister_install(){
-    mkdir -p /home/wwwroot/${domain} && cd /home/wwwroot/${domain}
-	wget "https://github.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/raw/master/website/DirectoryLister.zip"
-	unzip DirectoryLister.zip && rm -f DirectoryLister.zip
-    if [[ $? -eq 0 ]];then
-        echo -e "${OK} ${GreenBG} DirectoryLister 下载成功 ${Font}"
-        sleep 1
-    else
-        echo -e "${Error} ${RedBG} DirectoryLister 下载失败 ${Font}"
-        exit 1
-    fi
-	mkdir Cloud
+
+gdlist_install(){
+	wget https://github.com/reruin/gdlist/archive/master.zip -O gdlist.zip
+	unzip gdlist
+	cd gdlist-master
+	npm install yarn -g
+	npm install -g pm2
+	yarn add pm2 -g
+	pm2 start bin/www
+	pm2 save
+	pm2 startup
+	echo "http://${domain2} {
+ redir https://${domain2}{url}
 }
+https://${domain2} {
+ gzip
+ tls ${sslmail}
+ proxy / http://127.0.0.1:33001
+}" > /usr/local/caddy/Caddyfile
+}
+
 aria2ng_install(){
     mkdir -p /home/wwwroot/${domain2} && cd /home/wwwroot/${domain2} && wget ${aria2ng_download_http} && unzip aria-ng-${aria2ng_new_ver}.zip
 	if [[ $? -eq 0 ]];then
@@ -226,8 +135,19 @@ aria2ng_install(){
         echo -e "${Error} ${RedBG} AriaNg 下载失败 ${Font}"
         exit 1
     fi
+	echo "http://${domain2} {
+  root /home/wwwroot/${domain2}
+  timeouts none
+  gzip
+  browse
+}" > /usr/local/caddy/Caddyfile
 }
+
 domain_check(){
+	stty erase '^H' && read -p "请输入你的DirectoryLister域名信息(eg:pan.94ish.me):" domain 
+	read -p "请输入你的Aria2NG域名信息(eg:dl.94ish.me):" domain2
+    stty erase '^H' && read -p "请输入你的Aria2密钥:" pass
+	stty erase '^H' && read -p "请输入你的电子邮箱:" sslmail
     ## ifconfig
     ## stty erase '^H' && read -p "请输入公网 IP 所在网卡名称(default:eth0):" broadcast
     ## [[ -z ${broadcast} ]] && broadcast="eth0"
@@ -253,29 +173,8 @@ domain_check(){
         esac
     fi
 }
-standard(){
-    basic_dependency
-    domain_check
-    nginx_install
-    php7_install
-    DirectoryLister_install
-	aria2ng_install
-}
-ssl(){
 
-    service nginx stop
-    service php7.0-fpm stop
 
-    port_exist_check 80
-    port_exist_check 443
-
-    ssl_install
-    acme
-    nginx_conf_ssl_add
-
-    service nginx start
-    service php7.0-fpm start
-}
 aria_install(){
 echo -e "${GreenBG} 开始安装Aria2 ${Font}"
 apt-get install build-essential cron -y
@@ -290,8 +189,8 @@ make install
 cd /root
 rm -rf aria2 aria2-${aria2_new_ver}-linux-gnu-64bit-build1.tar.bz2
 mkdir "/root/.aria2" && cd "/root/.aria2"
-wget "https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/master/sh/dht.dat"
-wget "https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/master/sh/trackers-list-aria2.sh"
+wget "https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/sh/dht.dat"
+wget "https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/sh/trackers-list-aria2.sh"
 echo '' > /root/.aria2/aria2.session
 chmod +x /root/.aria2/trackers-list-aria2.sh
 chmod 777 /root/.aria2/aria2.session
@@ -361,34 +260,38 @@ stty erase '^H' && read -p "请输入你刚刚输入的Name:" name && read -p "�
 
 init_install(){
 echo -e "${GreenBG} 开始配置自启 ${Font}"
-wget --no-check-certificate https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/master/sh/aria2 -O /etc/init.d/aria2
+wget --no-check-certificate https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/sh/aria2 -O /etc/init.d/aria2
 chmod +x /etc/init.d/aria2
 update-rc.d -f aria2 defaults
-wget https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/chiakge-patch-1/sh/autoupload.sh
+wget https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/sh/autoupload.sh
 sed -i '4i\name='${name}'' autoupload.sh
 sed -i '4i\folder='${folder}'' autoupload.sh
 mv autoupload.sh /root/.aria2/autoupload.sh
 chmod +x /root/.aria2/autoupload.sh
-wget https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/chiakge-patch-1/sh/rcloned
-web="/home/wwwroot/${domain}/Cloud"
-sed -i '16i\NAME='${name}'' rcloned
-sed -i '16i\REMOTE='${folder}'' rcloned
-sed -i '16i\LOCALFile='${web}'' rcloned
-mv rcloned /etc/init.d/rcloned
-chmod +x /etc/init.d/rcloned
-update-rc.d -f rcloned defaults
+wget --no-check-certificate https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/sh/caddy_debian -O /etc/init.d/caddy
+chmod +x /etc/init.d/caddy
+update-rc.d -f caddy defaults
+echo && echo -e " Caddy 配置文件：${caddy_conf_file}
+ Caddy 日志文件：/tmp/caddy.log
+ 使用说明：service caddy start | stop | restart | status
+ 或者使用：/etc/init.d/caddy start | stop | restart | status
+ ${Green}[信息]${Font} Caddy 安装完成！" && echo
 echo -e "${GreenBG} 请选择VIM编辑后输入:wq保存 ${Font}"
 crontab -e
 bash /etc/init.d/aria2 start
 bash /etc/init.d/rcloned start
+bash /etc/init.d/caddy start
 }
 
 main(){
     check_system
     is_root
 	sleep 2
-            standard
-            ssl
+			domain_check
+			basic_dependency
+			caddy_install
+			gdlist_install
+			aria2ng_install
 			aria_install
 			rclone_install
 			init_install
