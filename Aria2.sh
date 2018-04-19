@@ -140,11 +140,11 @@ aria2ng_install(){
   timeouts none
   gzip
   browse
-}" > /usr/local/caddy/Caddyfile
+}" >> /usr/local/caddy/Caddyfile
 }
 
 domain_check(){
-	stty erase '^H' && read -p "请输入你的DirectoryLister域名信息(eg:pan.94ish.me):" domain 
+	stty erase '^H' && read -p "请输入你的GDlist域名信息(eg:pan.94ish.me):" domain 
 	read -p "请输入你的Aria2NG域名信息(eg:dl.94ish.me):" domain2
     stty erase '^H' && read -p "请输入你的Aria2密钥:" pass
 	stty erase '^H' && read -p "请输入你的电子邮箱:" sslmail
@@ -279,8 +279,7 @@ echo && echo -e " Caddy 配置文件：${caddy_conf_file}
 echo -e "${GreenBG} 请选择VIM编辑后输入:wq保存 ${Font}"
 crontab -e
 bash /etc/init.d/aria2 start
-bash /etc/init.d/rcloned start
-bash /etc/init.d/caddy start
+bash /etc/init.d/caddy restart
 }
 
 main(){
