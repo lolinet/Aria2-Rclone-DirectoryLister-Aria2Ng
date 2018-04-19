@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ====================================================
-#	System Request:Debian 8
+#	System Request:Debian 8 + Ubuntu 16
 #	Author:	Chikage
-#	Nginx+PHP+Aria2+Rclone+DirectoryLister+AriaNg
+#	Caddy+Aria2+Rclone+GDlist+AriaNg
 # ====================================================
 
 #fonts color
