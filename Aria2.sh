@@ -80,7 +80,7 @@ port_exist_check(){
 
 gdlist_install(){
 	cd /root
-	wget https://github.com/reruin/gdlist/archive/master.zip -O gdlist.zip
+	wget https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/website/gdlist-master.zip -O gdlist.zip
 	unzip gdlist
 	cd gdlist-master
 	npm install yarn -g
