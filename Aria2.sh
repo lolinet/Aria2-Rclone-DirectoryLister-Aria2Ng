@@ -93,8 +93,7 @@ caddy_install(){
 	rm -rf CHANGES.txt
 	rm -rf "init/"
 	chmod +x caddy
-	nowDIR="$( cd "$( dirname "$0"  )" && pwd  )"
-	cd ${nowDIR}
+	cd /root
 }
 
 port_exist_check(){
@@ -109,6 +108,7 @@ port_exist_check(){
 }
 
 gdlist_install(){
+	cd /root
 	wget https://github.com/reruin/gdlist/archive/master.zip -O gdlist.zip
 	unzip gdlist
 	cd gdlist-master
