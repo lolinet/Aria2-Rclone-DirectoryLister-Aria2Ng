@@ -43,6 +43,7 @@ check_system(){
 	port_exist_check 443
 	port_exist_check 33001
 	port_exist_check 6800
+apt-get update
 apt install wget unzip net-tools bc curl sudo -y
 	
 }
