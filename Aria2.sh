@@ -115,6 +115,7 @@ gdlist_install(){
 	wget https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/website/gdlist-master.zip -O gdlist.zip
 	unzip gdlist
 	cd gdlist-master
+	npm -g install npm@4
 	npm install yarn -g
 	npm install -g pm2
 	yarn add pm2 -g
