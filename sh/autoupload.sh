@@ -20,6 +20,7 @@ elif [ "$path" = "$downloadpath" ]   #文件夹
     rclone move "$filepath"/ ${name}:${folder}/"${filepath##*/}"/ --delete-empty-src-dirs
 	done
 	rm -rf "$filepath/"
+	rm -rf "/root/gdlist-master/db.json"
     exit 0
 fi
 done

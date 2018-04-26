@@ -257,6 +257,7 @@ cp -raf rclone.1 /usr/local/share/man/man1/
 rm -f rclone_debian.sh
 rclone config
 stty erase '^H' && read -p "请输入你刚刚输入的Name:" name && read -p "请输入你云盘中需要挂载的文件夹:" folder
+stty erase '^H' && read -p "请输入你的Gdlist管理密码:" passgdlist
 }
 
 init_install(){
@@ -267,6 +268,7 @@ update-rc.d -f aria2 defaults
 wget https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/sh/autoupload.sh
 sed -i '4i\name='${name}'' autoupload.sh
 sed -i '4i\folder='${folder}'' autoupload.sh
+sed -i "25i\curl  --data \"a=clear_cache\" \"http://127.0.0.1:33001/manage/${passgdlist}\"" autoupload.sh
 mv autoupload.sh /root/.aria2/autoupload.sh
 chmod +x /root/.aria2/autoupload.sh
 wget --no-check-certificate https://raw.githubusercontent.com/chiakge/Aria2-Rclone-DirectoryLister-Aria2Ng/gdlist/sh/caddy_debian -O /etc/init.d/caddy
